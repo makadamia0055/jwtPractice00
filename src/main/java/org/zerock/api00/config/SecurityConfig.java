@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.zerock.api00.security.APIUserDetailsService;
 import org.zerock.api00.security.filter.APILoginFilter;
+import org.zerock.api00.security.handler.APILoginSuccessHandler;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -57,6 +58,11 @@ public class SecurityConfig {
         // APILoginFilter
         APILoginFilter apiLoginFilter = new APILoginFilter("/generateToken");
         apiLoginFilter.setAuthenticationManager(authenticationManager);
+
+        // APILoginSuccessHandler
+        APILoginSuccessHandler successHandler = new APILoginSuccessHandler();
+        // SuccessHandler 세팅
+        apiLoginFilter.setAuthenticationSuccessHandler(successHandler);
 
         // APILoginFilter의 위치 조정
         http.addFilterBefore(apiLoginFilter, UsernamePasswordAuthenticationFilter.class);
