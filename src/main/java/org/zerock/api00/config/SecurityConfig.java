@@ -5,6 +5,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -13,7 +15,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.zerock.api00.security.APIUserDetailsService;
+import org.zerock.api00.security.filter.APILoginFilter;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -21,6 +26,8 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableMethodSecurity(prePostEnabled = true)
 @Configuration
 public class SecurityConfig {
+
+    private final APIUserDetailsService apiUserDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -39,7 +46,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http)throws Exception{
-        log.info("-------configure------------");
+
+        // AuthenticationManger 설정
+        AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+
+        AuthenticationManager authenticationManager = authenticationManager(authenticationManagerBuilder);
+
+        http.authenticationManager(authenticationManager);
+
+        // APILoginFilter
+        APILoginFilter apiLoginFilter = new APILoginFilter("/generatedToken");
+        apiLoginFilter.setAuthenticationManager(authenticationManager);
+
+        // APILoginFilter의 위치 조정
+        http.addFilterBefore(apiLoginFilter, UsernamePasswordAuthenticationFilter.class);
+
 
         http.csrf(csrf-> csrf.disable());
 
@@ -47,5 +68,14 @@ public class SecurityConfig {
 
         return http.build();
 
+    }
+
+    private AuthenticationManager authenticationManager(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
+        authenticationManagerBuilder
+                .userDetailsService(apiUserDetailsService)
+                .passwordEncoder(passwordEncoder());
+
+        // Get AuthenticationManager
+        return authenticationManagerBuilder.build();
     }
 }
