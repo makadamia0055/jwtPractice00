@@ -19,7 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.zerock.api00.security.APIUserDetailsService;
 import org.zerock.api00.security.filter.APILoginFilter;
+import org.zerock.api00.security.filter.TokenCheckFilter;
 import org.zerock.api00.security.handler.APILoginSuccessHandler;
+import org.zerock.api00.util.JWTUtil;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -29,6 +31,8 @@ import org.zerock.api00.security.handler.APILoginSuccessHandler;
 public class SecurityConfig {
 
     private final APIUserDetailsService apiUserDetailsService;
+
+    private final JWTUtil jwtUtil;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -60,12 +64,18 @@ public class SecurityConfig {
         apiLoginFilter.setAuthenticationManager(authenticationManager);
 
         // APILoginSuccessHandler
-        APILoginSuccessHandler successHandler = new APILoginSuccessHandler();
+        APILoginSuccessHandler successHandler = new APILoginSuccessHandler(jwtUtil);
         // SuccessHandler 세팅
         apiLoginFilter.setAuthenticationSuccessHandler(successHandler);
 
         // APILoginFilter의 위치 조정
         http.addFilterBefore(apiLoginFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // api로 시작하는 모든 경로는 TokenCheckFilter 동작
+        http.addFilterBefore(
+            tokenCheckFilter(jwtUtil),
+                UsernamePasswordAuthenticationFilter.class
+        );
 
 
         http.csrf(csrf-> csrf.disable());
@@ -83,5 +93,8 @@ public class SecurityConfig {
 
         // Get AuthenticationManager
         return authenticationManagerBuilder.build();
+    }
+    private TokenCheckFilter tokenCheckFilter(JWTUtil jwtUtil){
+        return new TokenCheckFilter(jwtUtil);
     }
 }
