@@ -55,7 +55,7 @@ public class SecurityConfig {
         http.authenticationManager(authenticationManager);
 
         // APILoginFilter
-        APILoginFilter apiLoginFilter = new APILoginFilter("/generatedToken");
+        APILoginFilter apiLoginFilter = new APILoginFilter("/generateToken");
         apiLoginFilter.setAuthenticationManager(authenticationManager);
 
         // APILoginFilter의 위치 조정
